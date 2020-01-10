@@ -2,13 +2,14 @@
 
 Name: libnetfilter_queue
 Version: 1.0.2
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Netfilter queue userspace library
 Group: System Environment/Libraries
 # Most files say GPLv2+, one says v2 only.
 License: GPLv2
 URL: http://netfilter.org
 Source0: http://netfilter.org/projects/%{name}/files/%{name}-%{version}.tar.bz2
+Patch0: libnetfilter_queue-1.0.2-rh1348210.patch
 
 BuildRequires: pkgconfig, kernel-headers
 BuildRequires: libnfnetlink-devel >= %{libnfnetlink}, libmnl-devel >= 1.0.3
@@ -35,6 +36,7 @@ libnetfilter_queue has been previously known as libnfnetlink_queue.
 
 %prep
 %setup -q
+%patch0 -p1
 
 %build
 %configure --disable-silent-rules --disable-static --disable-rpath
@@ -61,6 +63,10 @@ rm %{buildroot}/%{_includedir}/internal.h
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+* Fri Jul 08 2016 Pavel Šimerda <psimerda@redhat.com> - 1.0.2-2
+- Resolves: #1348210 - libnetfilter_queue might not process packets from a given
+  queue
+
 * Thu Aug 28 2014 Pavel Šimerda <psimerda@redhat.com> - 1.0.2-1
 - Resolves: #1058375 - provide libnetfilter_queue package for RHEL 7.1
 

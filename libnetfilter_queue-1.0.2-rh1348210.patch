@@ -1,0 +1,49 @@
+From 4ca06bc967d94b7b7b5a6efc76e870f0efc77e24 Mon Sep 17 00:00:00 2001
+From: Florian Westphal <fw@strlen.de>
+Date: Thu, 16 Jun 2016 15:11:32 +0200
+Subject: src: make nfq_open_nfnl thread-safe
+
+nfq_open_nfnl uses an intermediate static object, so when it is invoked
+by distinct threads at the same time there is a small chance that some
+threads end up with another threads nfq_handle pointer stored in ->data.
+
+The result is that the affected queue will be stuck because the thread
+that was supposed to service it is handling another/wrong queue instead.
+
+Tested-by: Michal Tesar <mtesar@redhat.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ src/libnetfilter_queue.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/src/libnetfilter_queue.c b/src/libnetfilter_queue.c
+index 84184ee..5fbde5b 100644
+--- a/src/libnetfilter_queue.c
++++ b/src/libnetfilter_queue.c
+@@ -216,11 +216,6 @@ static int __nfq_rcv_pkt(struct nlmsghdr *nlh, struct nfattr *nfa[],
+ 	return qh->cb(qh, nfmsg, &nfqa, qh->data);
+ }
+ 
+-static struct nfnl_callback pkt_cb = {
+-	.call		= &__nfq_rcv_pkt,
+-	.attr_count	= NFQA_MAX,
+-};
+-
+ /* public interface */
+ 
+ struct nfnl_handle *nfq_nfnlh(struct nfq_handle *h)
+@@ -389,6 +384,10 @@ EXPORT_SYMBOL(nfq_open);
+  */
+ struct nfq_handle *nfq_open_nfnl(struct nfnl_handle *nfnlh)
+ {
++	struct nfnl_callback pkt_cb = {
++		.call		= __nfq_rcv_pkt,
++		.attr_count	= NFQA_MAX,
++	};
+ 	struct nfq_handle *h;
+ 	int err;
+ 
+-- 
+cgit v0.12
+
